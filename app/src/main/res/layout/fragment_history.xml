@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Historial de comandos"
+        android:textSize="28sp"
+        android:textColor="#2196F3"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_history"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/txt_no_commands"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="No hay comandos aún"
+        android:textSize="16sp"
+        android:textColor="#9E9E9E"
+        android:layout_gravity="center"
+        android:padding="24dp"/>
+
+    <TextView
+        android:id="@+id/txt_tap_to_listen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pulsa un comando para escucharlo"
+        android:textSize="14sp"
+        android:textColor="#757575"
+        android:layout_marginTop="12dp"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/btn_clear_history"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Limpiar historial"
+        android:textColor="@android:color/white"
+        android:background="#2196F3"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"/>
+
+</LinearLayout>

@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">ChemaKou</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="usoApp">Desde la pantalla principal, el usuario puede pulsar el botón del micrófono y decir lo que quiere hacer. La aplicación reconoce el comando y abre automáticamente la sección correspondiente, como el lector de texto, la geolocalización o la ayuda.\n\nLos comandos realizados se guardan en un historial para poder consultarlos más tarde.El objetivo de la aplicación es facilitar el acceso a la información de forma rápida, clara y accesible para cualquier usuario.</string>
+</resources>

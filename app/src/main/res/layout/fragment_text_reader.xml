@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:gravity="center_horizontal"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/title_text_reader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Haz una foto para detectar y leer el texto"
+        android:textSize="28sp"
+        android:textColor="#2196F3"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="40dp"
+        android:paddingHorizontal="16dp"/>
+
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp">
+
+        <ImageView
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:src="@drawable/circle_white_blue_border"
+            android:contentDescription="Círculo para cámara" />
+
+        <ImageView
+            android:id="@+id/btn_open_camera"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:src="@drawable/ic_camera"
+            android:layout_gravity="center"
+            android:contentDescription="Abrir cámara" />
+
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/txt_open_camera"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pulsa para abrir la cámara"
+        android:textSize="18sp"
+        android:textColor="#757575"
+        android:layout_marginBottom="40dp"/>
+
+    <TextView
+        android:id="@+id/txt_detected_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Texto detectado:"
+        android:textSize="18sp"
+        android:textColor="#2196F3"
+        android:textStyle="bold"/>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_detected_text"
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardPreventCornerOverlap="false"
+        app:cardUseCompatPadding="true"
+        android:layout_marginBottom="16dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ScrollView
+                android:id="@+id/scroll_text"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/txt_detected_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#424242"
+                    android:lineSpacingExtra="4dp"
+                    android:padding="16dp"/>
+
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/txt_no_text_yet"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="Toma una foto para ver el texto aquí"
+                android:textSize="16sp"
+                android:textColor="#9E9E9E"
+                android:padding="16dp"/>
+
+        </FrameLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</LinearLayout>
