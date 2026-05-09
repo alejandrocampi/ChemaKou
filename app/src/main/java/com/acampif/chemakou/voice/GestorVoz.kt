@@ -8,17 +8,17 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import java.util.Locale
 
-class SpeechManager(
+class GestorVoz(
     private val context: Context,
     private val onResult: (String) -> Unit,
     private val onError: () -> Unit
 ) {
 
-    private val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+    private val speechRecognizer: SpeechRecognizer =
+        SpeechRecognizer.createSpeechRecognizer(context)
 
     init {
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
-
             override fun onReadyForSpeech(params: Bundle?) {}
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
@@ -30,13 +30,11 @@ class SpeechManager(
             }
 
             override fun onResults(results: Bundle?) {
-                val matches =
-                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                val matches = results
+                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
 
                 if (!matches.isNullOrEmpty()) {
-                    onResult(matches[0].lowercase(Locale("es", "ES")))
-                } else {
-                    onError()
+                    onResult(matches[0].lowercase(Locale.getDefault()))
                 }
             }
 
@@ -45,21 +43,18 @@ class SpeechManager(
         })
     }
 
-    fun startListening() {
+    fun empezarEscucha() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Habla ahora")
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
         }
-
         speechRecognizer.startListening(intent)
     }
 
-    fun destroy() {
+    fun destruir() {
         speechRecognizer.destroy()
     }
 }

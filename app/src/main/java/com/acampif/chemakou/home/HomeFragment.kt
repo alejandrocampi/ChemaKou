@@ -7,29 +7,46 @@ import android.view.View
 import android.widget.EditText
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.acampif.chemakou.assistant.AssistantManager
-import com.acampif.chemakou.data.CommandHistoryManager
+import com.acampif.chemakou.assistant.GestorAsistente
+import com.acampif.chemakou.data.GestorHistorial
 import com.acampif.chemakou.R
 import com.acampif.chemakou.databinding.FragmentHomeBinding
+import com.acampif.chemakou.LectorPantalla
 import java.util.Locale
+import com.acampif.chemakou.ia.ApiIA
 
-class HomeFragment : Fragment(R.layout.fragment_home) {
+class HomeFragment : Fragment(R.layout.fragment_home), LectorPantalla {
 
     private lateinit var binding: FragmentHomeBinding
-    private lateinit var assistantManager: AssistantManager
+    private lateinit var gestorAsistente: GestorAsistente
     private lateinit var textToSpeech: TextToSpeech
-    private lateinit var historyManager: CommandHistoryManager
+    private lateinit var gestorHistorial: GestorHistorial
+    private lateinit var apiIA: ApiIA
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding = FragmentHomeBinding.bind(view)
 
-        assistantManager = AssistantManager(findNavController())
-        historyManager = CommandHistoryManager(requireContext())
+        gestorAsistente = GestorAsistente(findNavController())
+        gestorHistorial = GestorHistorial(requireContext())
+        apiIA = ApiIA()
 
         textToSpeech = TextToSpeech(requireContext()) {
-            textToSpeech.language = Locale.getDefault()
+            val prefs = requireContext().getSharedPreferences("voz_settings", 0)
+
+            val idioma = prefs.getString("idioma", "Español")
+
+            val locale = if (idioma == "Inglés") {
+                Locale.US
+            } else {
+                Locale("es", "ES")
+            }
+
+            textToSpeech.language = locale
+
+            val velocidad = prefs.getFloat("speed", 1.0f)
+            textToSpeech.setSpeechRate(velocidad)
         }
 
         binding.btnMicrophone.setOnClickListener {
@@ -50,8 +67,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         input.hint = "Ej: leer texto, ubicación, ayuda..."
 
         AlertDialog.Builder(requireContext())
-            .setTitle("Entrada por voz (simulada)")
-            .setMessage("Escribe el comando")
+            .setTitle("Entrada por voz")
             .setView(input)
             .setPositiveButton("Aceptar") { _, _ ->
                 val command = input.text.toString()
@@ -59,35 +75,59 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     .trim()
 
                 if (command.isNotEmpty()) {
-                    processCommand(command)
+                    procesarComando(command)
                 }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun processCommand(command: String) {
-        showLastCommand(command)
+    private fun procesarComando(command: String) {
 
-        historyManager.saveCommand(command)
+        mostrarUltimoComando(command)
+        gestorHistorial.guardarComando(command)
 
-        val response = assistantManager.handleCommand(command)
-        speak(response)
+        val respuestaLocal = gestorAsistente.manejarComando(command)
+
+        if (!respuestaLocal.startsWith("He entendido")) {
+            binding.txtResponse.visibility = View.VISIBLE
+            binding.txtResponse.text = respuestaLocal
+            hablar(respuestaLocal)
+            return
+        }
+
+        hablar("Pensando")
+        binding.txtResponse.visibility = View.VISIBLE
+        binding.txtResponse.text = "Pensando..."
+
+        apiIA.enviarPregunta(command) { respuestaIA ->
+            requireActivity().runOnUiThread {
+                binding.txtResponse.text = respuestaIA
+                hablar(respuestaIA)
+            }
+        }
     }
 
-    private fun showLastCommand(command: String) {
+    private fun mostrarUltimoComando(command: String) {
         binding.txtNoLastCommand.visibility = View.GONE
         binding.lastCommandContent.visibility = View.VISIBLE
         binding.lastCommandText.text = command
     }
 
-    private fun speak(text: String) {
-        textToSpeech.speak(
-            text,
-            TextToSpeech.QUEUE_FLUSH,
-            null,
-            null
-        )
+    private fun hablar(texto: String) {
+        textToSpeech.speak(texto, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
+    override fun leerPantalla() {
+        val ultimo = binding.lastCommandText.text.toString()
+
+        val texto = if (ultimo.isEmpty()) {
+            "Pantalla principal. Puedes usar el micrófono o los botones."
+        } else {
+            "Pantalla principal. Último comando: $ultimo"
+        }
+
+        hablar(texto)
     }
 
     override fun onDestroyView() {
