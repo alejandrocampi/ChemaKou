@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.acampif.chemakou.databinding.ItemHistoryCommandBinding
 
 class HistoryAdapter(
-    private val commands: MutableList<String>,
+    private val lista: MutableList<String>,
     private val onClick: (String) -> Unit
 ) : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
 
@@ -22,25 +22,26 @@ class HistoryAdapter(
         return ViewHolder(binding)
     }
 
+    override fun getItemCount() = lista.size
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val command = commands[position]
-        holder.binding.txtCommand.text = command
-        holder.binding.root.setOnClickListener {
-            onClick(command)
+        val comando = lista[position]
+        holder.binding.txtCommand.text = comando
+
+        holder.itemView.setOnClickListener {
+            onClick(comando)
         }
     }
 
-    override fun getItemCount(): Int = commands.size
-
-    fun removeAt(position: Int): String {
-        val removed = commands[position]
-        commands.removeAt(position)
-        notifyItemRemoved(position)
-        return removed
+    fun eliminarEn(pos: Int): String {
+        val eliminado = lista[pos]
+        lista.removeAt(pos)
+        notifyItemRemoved(pos)
+        return eliminado
     }
 
-    fun clear() {
-        commands.clear()
+    fun limpiar() {
+        lista.clear()
         notifyDataSetChanged()
     }
 }

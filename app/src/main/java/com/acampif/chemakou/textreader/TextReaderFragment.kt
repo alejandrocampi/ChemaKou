@@ -1,60 +1,148 @@
-package com.acampif.chemakou.textreader
+package com.acampif.chemakou
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
+import android.provider.MediaStore
+import android.speech.tts.TextToSpeech
 import android.view.View
-import android.view.ViewGroup
-import com.acampif.chemakou.R
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import com.acampif.chemakou.databinding.FragmentTextReaderBinding
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.util.Locale
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class TextReaderFragment : Fragment(R.layout.fragment_text_reader), LectorPantalla {
 
-/**
- * A simple [Fragment] subclass.
- * Use the [TextReaderFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class TextReaderFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    private lateinit var binding: FragmentTextReaderBinding
+    private lateinit var textToSpeech: TextToSpeech
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
+    private val REQUEST_IMAGE = 100
+    private val REQUEST_CAMERA = 200
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding = FragmentTextReaderBinding.bind(view)
+
+        val prefs = requireContext().getSharedPreferences("voz_settings", 0)
+
+        textToSpeech = TextToSpeech(requireContext()) {
+            val idioma = prefs.getString("idioma", "Español")
+
+            val locale = if (idioma == "Inglés") {
+                Locale.US
+            } else {
+                Locale("es", "ES")
+            }
+
+            textToSpeech.language = locale
+
+            val velocidad = prefs.getFloat("speed", 1.0f)
+            textToSpeech.setSpeechRate(velocidad)
+        }
+
+        binding.btnOpenCamera.setOnClickListener {
+            abrirCamara()
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_text_reader, container, false)
+    private fun abrirCamara() {
+
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            ActivityCompat.requestPermissions(
+                requireActivity(),
+                arrayOf(Manifest.permission.CAMERA),
+                REQUEST_CAMERA
+            )
+            return
+        }
+
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        startActivityForResult(intent, REQUEST_IMAGE)
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment TextReaderFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            TextReaderFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == REQUEST_CAMERA &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            abrirCamara()
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_IMAGE && resultCode == Activity.RESULT_OK) {
+
+            val bitmap = data?.extras?.get("data") as? Bitmap ?: return
+
+            reconocerTexto(bitmap)
+        }
+    }
+
+    private fun reconocerTexto(bitmap: Bitmap) {
+
+        val image = InputImage.fromBitmap(bitmap, 0)
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+
+        recognizer.process(image)
+            .addOnSuccessListener { visionText ->
+
+                val texto = visionText.text
+
+                if (texto.isNotEmpty()) {
+                    mostrarTexto(texto)
+                    hablar("Texto detectado: $texto")
+                } else {
+                    hablar("No se ha detectado texto")
                 }
             }
+            .addOnFailureListener {
+                hablar("Error al detectar texto")
+            }
+    }
+
+    private fun mostrarTexto(texto: String) {
+        binding.txtNoTextYet.visibility = View.GONE
+        binding.scrollText.visibility = View.VISIBLE
+        binding.txtDetectedText.text = texto
+    }
+
+    override fun leerPantalla() {
+        val texto = binding.txtDetectedText.text.toString()
+
+        val mensaje = if (texto.isEmpty()) {
+            "No hay texto detectado"
+        } else {
+            "El texto detectado es: $texto"
+        }
+
+        hablar(mensaje)
+    }
+
+    private fun hablar(texto: String) {
+        textToSpeech.speak(texto, TextToSpeech.QUEUE_FLUSH, null, null)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        textToSpeech.shutdown()
     }
 }

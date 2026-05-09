@@ -1,60 +1,86 @@
-package com.acampif.chemakou.settings
+package com.acampif.chemakou
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import com.acampif.chemakou.R
+import android.widget.ArrayAdapter
+import android.widget.SeekBar
+import androidx.fragment.app.Fragment
+import com.acampif.chemakou.databinding.FragmentSettingsBinding
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
-/**
- * A simple [Fragment] subclass.
- * Use the [SettingsFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class SettingsFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    private lateinit var binding: FragmentSettingsBinding
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding = FragmentSettingsBinding.bind(view)
+
+        val prefs = requireContext().getSharedPreferences("voz_settings", 0)
+
+        configurarSpinner(prefs)
+        configurarVelocidad(prefs)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_settings, container, false)
-    }
+    private fun configurarSpinner(prefs: android.content.SharedPreferences) {
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment SettingsFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            SettingsFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
+        val idiomas = listOf("Español", "Inglés")
+
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            idiomas
+        )
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerLanguage.adapter = adapter
+
+        val idiomaGuardado = prefs.getString("idioma", "Español")
+        val posicion = idiomas.indexOf(idiomaGuardado)
+        binding.spinnerLanguage.setSelection(posicion)
+
+        binding.spinnerLanguage.setOnItemSelectedListener(object :
+            android.widget.AdapterView.OnItemSelectedListener {
+
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val idioma = idiomas[position]
+                prefs.edit().putString("idioma", idioma).apply()
             }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        })
+    }
+
+    private fun configurarVelocidad(prefs: android.content.SharedPreferences) {
+
+        val velocidadGuardada = prefs.getFloat("speed", 1.0f)
+
+        binding.seekbarSpeed.progress = when {
+            velocidadGuardada < 0.8f -> 0
+            velocidadGuardada < 1.0f -> 1
+            velocidadGuardada < 1.3f -> 2
+            velocidadGuardada < 1.6f -> 3
+            else -> 4
+        }
+
+        binding.seekbarSpeed.setOnSeekBarChangeListener(object :
+            SeekBar.OnSeekBarChangeListener {
+
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+
+                val velocidad = when (progress) {
+                    0 -> 0.5f
+                    1 -> 0.8f
+                    2 -> 1.0f
+                    3 -> 1.3f
+                    else -> 1.6f
+                }
+
+                prefs.edit().putFloat("speed", velocidad).apply()
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
     }
 }

@@ -1,60 +1,178 @@
-package com.acampif.chemakou.location
+package com.acampif.chemakou
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.location.Geocoder
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
+import android.speech.tts.TextToSpeech
 import android.view.View
-import android.view.ViewGroup
-import com.acampif.chemakou.R
+import androidx.core.app.ActivityCompat
+import androidx.fragment.app.Fragment
+import com.acampif.chemakou.databinding.FragmentLocationBinding
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import java.util.Locale
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
+class LocationFragment :
+    Fragment(R.layout.fragment_location),
+    LectorPantalla,
+    OnMapReadyCallback {
 
-/**
- * A simple [Fragment] subclass.
- * Use the [LocationFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class LocationFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+    private lateinit var binding: FragmentLocationBinding
+    private lateinit var textToSpeech: TextToSpeech
+    private lateinit var googleMap: GoogleMap
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding = FragmentLocationBinding.bind(view)
+
+        val prefs = requireContext().getSharedPreferences("voz_settings", 0)
+
+        textToSpeech = TextToSpeech(requireContext()) {
+
+            val idioma = prefs.getString("idioma", "Español")
+
+            val locale = if (idioma == "Inglés") {
+                Locale.US
+            } else {
+                Locale("es", "ES")
+            }
+
+            textToSpeech.language = locale
+
+            val velocidad = prefs.getFloat("speed", 1.0f)
+            textToSpeech.setSpeechRate(velocidad)
+        }
+
+        val mapFragment =
+            childFragmentManager.findFragmentById(R.id.map)
+                    as SupportMapFragment
+
+        mapFragment.getMapAsync(this)
+    }
+
+    override fun onMapReady(map: GoogleMap) {
+        googleMap = map
+        obtenerUbicacion()
+    }
+
+    private fun obtenerUbicacion() {
+
+        val fusedLocationClient =
+            LocationServices.getFusedLocationProviderClient(requireActivity())
+
+        if (
+            ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            binding.txtNoLocation.text =
+                "Permiso de ubicación no concedido"
+
+            return
+        }
+
+        googleMap.isMyLocationEnabled = true
+
+        googleMap.uiSettings.isMyLocationButtonEnabled = true
+
+        fusedLocationClient.getCurrentLocation(
+            com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+            null
+        ).addOnSuccessListener { location ->
+
+            if (location != null) {
+
+                val latLng = LatLng(
+                    location.latitude,
+                    location.longitude
+                )
+
+                googleMap.clear()
+
+                googleMap.addMarker(
+                    MarkerOptions()
+                        .position(latLng)
+                        .title("Tu ubicación")
+                )
+
+                googleMap.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(latLng, 17f)
+                )
+
+                val geocoder =
+                    Geocoder(requireContext(), Locale.getDefault())
+
+                val addresses = geocoder.getFromLocation(
+                    location.latitude,
+                    location.longitude,
+                    1
+                )
+
+                if (!addresses.isNullOrEmpty()) {
+
+                    val address = addresses[0]
+
+                    val direccion =
+                        address.getAddressLine(0)
+
+                    val ciudad =
+                        address.locality ?: "Ciudad desconocida"
+
+                    binding.txtNoLocation.visibility = View.GONE
+                    binding.locationInfoContent.visibility = View.VISIBLE
+
+                    binding.txtAddress.text = direccion
+                    binding.txtCity.text = ciudad
+
+                    binding.txtNearbyPlaces.text =
+                        "Ubicación detectada correctamente"
+
+                    hablar("Te encuentras en $direccion")
+                }
+
+            } else {
+
+                binding.txtNoLocation.text =
+                    "No se pudo detectar la ubicación"
+            }
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_location, container, false)
+    override fun leerPantalla() {
+
+        val direccion =
+            binding.txtAddress.text.toString()
+
+        val mensaje = if (direccion.isEmpty()) {
+            "Obteniendo ubicación"
+        } else {
+            "Tu ubicación actual es $direccion"
+        }
+
+        hablar(mensaje)
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment LocationFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            LocationFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+    private fun hablar(texto: String) {
+
+        textToSpeech.speak(
+            texto,
+            TextToSpeech.QUEUE_FLUSH,
+            null,
+            null
+        )
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        textToSpeech.shutdown()
     }
 }

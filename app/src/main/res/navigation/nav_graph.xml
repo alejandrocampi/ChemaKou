@@ -19,17 +19,18 @@
     </fragment>
     <fragment
         android:id="@+id/textReaderFragment"
-        android:name="com.acampif.chemakou.textreader.TextReaderFragment"
+        android:name="com.acampif.chemakou.TextReaderFragment"
         android:label="Lector de texto"
         tools:layout="@layout/fragment_text_reader" />
+
     <fragment
         android:id="@+id/locationFragment"
-        android:name="com.acampif.chemakou.location.LocationFragment"
+        android:name="com.acampif.chemakou.LocationFragment"
         android:label="Geolocalización"
         tools:layout="@layout/fragment_location" />
     <fragment
         android:id="@+id/settingsFragment"
-        android:name="com.acampif.chemakou.settings.SettingsFragment"
+        android:name="com.acampif.chemakou.SettingsFragment"
         android:label="Ajustes"
         tools:layout="@layout/fragment_settings" />
     <fragment

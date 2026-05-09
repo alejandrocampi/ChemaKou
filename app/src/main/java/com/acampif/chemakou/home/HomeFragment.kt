@@ -13,7 +13,6 @@ import com.acampif.chemakou.R
 import com.acampif.chemakou.databinding.FragmentHomeBinding
 import com.acampif.chemakou.LectorPantalla
 import java.util.Locale
-import com.acampif.chemakou.ia.ApiIA
 
 class HomeFragment : Fragment(R.layout.fragment_home), LectorPantalla {
 
@@ -21,7 +20,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), LectorPantalla {
     private lateinit var gestorAsistente: GestorAsistente
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var gestorHistorial: GestorHistorial
-    private lateinit var apiIA: ApiIA
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -30,7 +28,6 @@ class HomeFragment : Fragment(R.layout.fragment_home), LectorPantalla {
 
         gestorAsistente = GestorAsistente(findNavController())
         gestorHistorial = GestorHistorial(requireContext())
-        apiIA = ApiIA()
 
         textToSpeech = TextToSpeech(requireContext()) {
             val prefs = requireContext().getSharedPreferences("voz_settings", 0)
@@ -83,29 +80,10 @@ class HomeFragment : Fragment(R.layout.fragment_home), LectorPantalla {
     }
 
     private fun procesarComando(command: String) {
-
         mostrarUltimoComando(command)
         gestorHistorial.guardarComando(command)
-
-        val respuestaLocal = gestorAsistente.manejarComando(command)
-
-        if (!respuestaLocal.startsWith("He entendido")) {
-            binding.txtResponse.visibility = View.VISIBLE
-            binding.txtResponse.text = respuestaLocal
-            hablar(respuestaLocal)
-            return
-        }
-
-        hablar("Pensando")
-        binding.txtResponse.visibility = View.VISIBLE
-        binding.txtResponse.text = "Pensando..."
-
-        apiIA.enviarPregunta(command) { respuestaIA ->
-            requireActivity().runOnUiThread {
-                binding.txtResponse.text = respuestaIA
-                hablar(respuestaIA)
-            }
-        }
+        val respuesta = gestorAsistente.manejarComando(command)
+        hablar(respuesta)
     }
 
     private fun mostrarUltimoComando(command: String) {
